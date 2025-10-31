@@ -1,4 +1,4 @@
-# Obsidian GH Links Shortener Plugin
+# GH Links Shortener Plugin
 
 This is a very simple Obsidian plugin which captures pasted text and sets the link title to a shortened GitHub ref text if it detects it's a link to a GitHub repo, issue, pull request, etc.
 
