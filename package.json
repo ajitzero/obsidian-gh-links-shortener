@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
-	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"name": "gh-links-shortener",
+	"version": "0.1.0",
+	"description": "Modifies pasted GitHub links to use short GitHub ref text as the link title.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
