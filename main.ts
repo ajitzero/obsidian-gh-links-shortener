@@ -51,6 +51,11 @@ function formatGHLink(pastedText: string): string | null {
 		// so external links are not supported and owner/repo is not shown.
 		return `[${id} (release)](${pastedText})`;
 	}
+	if (type === 'compare') {
+		// GitHub only supports this within the original project,
+		// so external links are not supported and owner/repo is not shown.
+		return `[${id}](${pastedText})`;
+	}
 
 	const idPrefix = type === 'commit' ? '@' : '#';
 	const idFormat = type === 'commit' ? id.slice(0, 7) : id;
@@ -76,8 +81,14 @@ function formatGHLink(pastedText: string): string | null {
  * Case 4: Releases
  * - https://github.com/owner/repo/releases/tag/{tag-id} -> "{tag-id} (release)"
  *
+ * Case 5: Compare changes between Tags or Commits
+ * - https://github.com/owner/repo/compare/{old-tag/commit-id}...{new-tag/commit-id} -> "{old-tag/commit-id}...{new-tag/commit-id}"
+ *
  * Exclusions:
  * - We don't need to show hash values, so we don't parse for them.
+ *
+ * Notes:
+ * - Cases 2-5 have the same parsing logic, but need to be formatted in different ways. Maybe we should move this comment to the formatGHLink function instead of here.
  */
 function parseDetails(pathname: URL['pathname']) {
 	// Check Case 1
@@ -88,8 +99,8 @@ function parseDetails(pathname: URL['pathname']) {
 		return { owner, repo, type: 'repo', id: '' };
 	}
 
-	// Check Case 2, 3, 4
-	regex = /^\/([^/]+)\/([^/]+)\/(issues|pull|discussions|commit|releases\/tag)\/([^/]+)\/?$/;
+	// Check Case 2-5
+	regex = /^\/([^/]+)\/([^/]+)\/(issues|pull|discussions|commit|releases\/tag|compare)\/([^/]+)\/?$/;
 	match = regex.exec(pathname);
 	if (match) {
 		const [, owner, repo, type, id] = match;
