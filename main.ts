@@ -3,8 +3,8 @@ import { Editor, MarkdownView, Plugin } from 'obsidian';
 export default class GHLinksShortenerPlugin extends Plugin {
 	async onload() {
 		this.registerEvent(
-			this.app.workspace.on("editor-paste", (evt: ClipboardEvent, editor: Editor, view: MarkdownView) => {
-				const pastedText = evt.clipboardData?.getData("text/plain");
+			this.app.workspace.on('editor-paste', (evt: ClipboardEvent, editor: Editor, view: MarkdownView) => {
+				const pastedText = evt.clipboardData?.getData('text/plain');
 				if (!pastedText) return;
 
 				const modifiedText = formatGHLink(pastedText);
@@ -43,17 +43,15 @@ function formatGHLink(pastedText: string): string | null {
 
 	const { owner, repo, type, id } = details;
 	if (type === 'repo') {
-		// If there is a hash to the README, we don;t want to remove it
+		// If there is a hash to the README, we want to retain it
 		return `[${owner}/${repo}](${pastedText})`;
 	}
 	if (type === 'release') {
-		// GitHub only supports this within the original project,
-		// so external links are not supported and owner/repo is not shown.
+		// GitHub only supports this within the original project, so owner/repo is hidden.
 		return `[${id} (release)](${pastedText})`;
 	}
 	if (type === 'compare') {
-		// GitHub only supports this within the original project,
-		// so external links are not supported and owner/repo is not shown.
+		// `id` is already formatted. No change needed.
 		return `[${id}](${pastedText})`;
 	}
 
@@ -69,6 +67,7 @@ function formatGHLink(pastedText: string): string | null {
  * Test cases:
  * Case 1: Project Name
  * - https://github.com/owner/repo -> "owner/repo"
+ * - https://github.com/owner/repo?tab=readme-ov-file#some-section-readme -> "owner/repo"
  *
  * Case 2: Issues, Pull Requests, Discussions
  * - https://github.com/owner/repo/issues/{issue-number} -> "owner/repo#{issue-number}"
