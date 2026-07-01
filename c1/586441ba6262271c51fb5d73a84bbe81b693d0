@@ -1,0 +1,22 @@
+main.ts
+  s_d1c742146792de::t_e4e7c2f670fa62 44-50,54-59
+  s_d1c742146792de::t_81a85b8c307eba 53,60
+  s_d1c742146792de::t_af378c2b9e58f3 51-52
+  s_d1c742146792de::t_662210420645a6 61-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "c1586441ba6262271c51fb5d73a84bbe81b693d0",
+  "prompts": {},
+  "sessions": {
+    "s_d1c742146792de": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "18057135-22f5-48c9-85ca-e02196960fb1",
+        "model": "composer-2.5"
+      },
+      "human_author": "Ajit Panigrahi <ajitzero@gmail.com>"
+    }
+  }
+}
