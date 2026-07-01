@@ -46,6 +46,11 @@ function formatGHLink(pastedText: string): string | null {
 		// If there is a hash to the README, we don;t want to remove it
 		return `[${owner}/${repo}](${pastedText})`;
 	}
+	if (type === 'release') {
+		// GitHub only supports this within the original project,
+		// so external links are not supported and owner/repo is not shown.
+		return `[${id} (release)](${pastedText})`;
+	}
 
 	const idPrefix = type === 'commit' ? '@' : '#';
 	const idFormat = type === 'commit' ? id.slice(0, 7) : id;
@@ -58,15 +63,18 @@ function formatGHLink(pastedText: string): string | null {
  *
  * Test cases:
  * Case 1: Project Name
- * - https://github.com/owner/repo -> owner/repo
+ * - https://github.com/owner/repo -> "owner/repo"
  *
  * Case 2: Issues, Pull Requests, Discussions
- * - https://github.com/owner/repo/issues/{issue-number} -> owner/repo#{issue-number}
- * - https://github.com/owner/repo/pull/{pr-id} -> owner/repo#{pr-id}
- * - https://github.com/owner/repo/discussions/{discussion-id} -> owner/repo#{discussion-id}
+ * - https://github.com/owner/repo/issues/{issue-number} -> "owner/repo#{issue-number}"
+ * - https://github.com/owner/repo/pull/{pr-id} -> "owner/repo#{pr-id}"
+ * - https://github.com/owner/repo/discussions/{discussion-id} -> "owner/repo#{discussion-id}"
  *
  * Case 3: Commits
- * - https://github.com/owner/repo/commit/{commit-sha} -> owner/repo@{commit-sha, first 7 characters only}
+ * - https://github.com/owner/repo/commit/{commit-sha} -> "owner/repo@{commit-sha, first 7 characters only}"
+ *
+ * Case 4: Releases
+ * - https://github.com/owner/repo/releases/tag/{tag-id} -> "{tag-id} (release)"
  *
  * Exclusions:
  * - We don't need to show hash values, so we don't parse for them.
@@ -80,12 +88,12 @@ function parseDetails(pathname: URL['pathname']) {
 		return { owner, repo, type: 'repo', id: '' };
 	}
 
-	// Check Case 2 & 3
-	regex = /^\/([^/]+)\/([^/]+)\/(issues|pull|discussions|commit)\/([^/]+)\/?$/;
+	// Check Case 2, 3, 4
+	regex = /^\/([^/]+)\/([^/]+)\/(issues|pull|discussions|commit|releases\/tag)\/([^/]+)\/?$/;
 	match = regex.exec(pathname);
 	if (match) {
 		const [, owner, repo, type, id] = match;
-		return { owner, repo, type, id };
+		return { owner, repo, type: type === 'releases/tag' ? 'release' : type, id };
 	}
 
 	// Not a valid URL we care about. Ignore.
