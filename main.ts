@@ -42,6 +42,11 @@ function formatGHLink(pastedText: string): string | null {
 	}
 
 	const { owner, repo, type, id } = details;
+	if (type === 'repo') {
+		// If there is a hash to the README, we don;t want to remove it
+		return `[${owner}/${repo}](${pastedText})`;
+	}
+
 	const idPrefix = type === 'commit' ? '@' : '#';
 	const idFormat = type === 'commit' ? id.slice(0, 7) : id;
 	const suffix = url.hash && isCommentHash(url.hash) ? ' (comment)' : '';
@@ -52,22 +57,39 @@ function formatGHLink(pastedText: string): string | null {
  * Tries to parse properties if this is a valid URL.
  *
  * Test cases:
- * Case 1:
+ * Case 1: Project Name
+ * - https://github.com/owner/repo -> owner/repo
+ *
+ * Case 2: Issues, Pull Requests, Discussions
  * - https://github.com/owner/repo/issues/{issue-number} -> owner/repo#{issue-number}
  * - https://github.com/owner/repo/pull/{pr-id} -> owner/repo#{pr-id}
  * - https://github.com/owner/repo/discussions/{discussion-id} -> owner/repo#{discussion-id}
  *
- * Case 2:
+ * Case 3: Commits
  * - https://github.com/owner/repo/commit/{commit-sha} -> owner/repo@{commit-sha, first 7 characters only}
+ *
+ * Exclusions:
+ * - We don't need to show hash values, so we don't parse for them.
  */
 function parseDetails(pathname: URL['pathname']) {
-	const regex = /^\/([^/]+)\/([^/]+)\/(issues|pull|discussions|commit)\/([^/]+)\/?$/;
-	const match = regex.exec(pathname);
-	if (!match) {
-		return null;
+	// Check Case 1
+	let regex = /^\/([^/]+)\/([^/]+)\/?$/;
+	let match = regex.exec(pathname);
+	if (match) {
+		const [, owner, repo] = match;
+		return { owner, repo, type: 'repo', id: '' };
 	}
-	const [, owner, repo, type, id] = match;
-	return { owner, repo, type, id };
+
+	// Check Case 2 & 3
+	regex = /^\/([^/]+)\/([^/]+)\/(issues|pull|discussions|commit)\/([^/]+)\/?$/;
+	match = regex.exec(pathname);
+	if (match) {
+		const [, owner, repo, type, id] = match;
+		return { owner, repo, type, id };
+	}
+
+	// Not a valid URL we care about. Ignore.
+	return null;
 }
 
 /**
