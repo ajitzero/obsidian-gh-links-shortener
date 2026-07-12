@@ -2,8 +2,9 @@
 
 This is a very simple Obsidian plugin which captures pasted text and sets the link title to a shortened GitHub ref text if it detects it's a link to a GitHub repo, issue, pull request, etc.
 
-Example: 
-- https://github.com/EnterpriseQualityCoding/FizzBuzzEnterpriseEdition/pull/1 → [EnterpriseQualityCoding/FizzBuzzEnterpriseEdition#1](https://github.com/EnterpriseQualityCoding/FizzBuzzEnterpriseEdition/pull/1)
+Example:
+
+- `https://github.com/EnterpriseQualityCoding/FizzBuzzEnterpriseEdition/pull/1` → `[EnterpriseQualityCoding/FizzBuzzEnterpriseEdition#1](https://github.com/EnterpriseQualityCoding/FizzBuzzEnterpriseEdition/pull/1)`
 
 # Related plugins
 
