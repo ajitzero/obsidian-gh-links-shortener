@@ -3,8 +3,8 @@ import { Editor, MarkdownView, Plugin } from 'obsidian';
 export default class GHLinksShortenerPlugin extends Plugin {
 	async onload() {
 		this.registerEvent(
-			this.app.workspace.on("editor-paste", (evt: ClipboardEvent, editor: Editor, view: MarkdownView) => {
-				const pastedText = evt.clipboardData?.getData("text/plain");
+			this.app.workspace.on('editor-paste', (evt: ClipboardEvent, editor: Editor, view: MarkdownView) => {
+				const pastedText = evt.clipboardData?.getData('text/plain');
 				if (!pastedText) return;
 
 				const modifiedText = formatGHLink(pastedText);
@@ -35,19 +35,97 @@ function formatGHLink(pastedText: string): string | null {
 	if (url.hostname != 'github.com') {
 		return null;
 	}
-	if (url.hash) {
-		// Don't replace with simple reference if there's a hash like "#issuecomment-492445254".
-		// TODO: Replace those but with a "(comment)" suffix?
+
+	const details = parseDetails(url.pathname);
+	if (!details) {
 		return null;
 	}
 
-	const pullOrIssueRegex = /^\/([^/]+)\/([^/]+)\/(issues|pull)\/(\d+)\/?$/;
-	const match = pullOrIssueRegex.exec(url.pathname);
-	if (match) {
-		const [, owner, repo, , number] = match;
-		return `[${owner}/${repo}#${number}](${pastedText})`;
+	const { owner, repo, type, id } = details;
+	if (type === 'repo') {
+		// If there is a hash to the README, we want to retain it
+		return `[${owner}/${repo}](${pastedText})`;
+	}
+	if (type === 'release') {
+		// GitHub only supports this within the original project, so owner/repo is hidden.
+		return `[${id} (release)](${pastedText})`;
+	}
+	if (type === 'compare') {
+		// `id` is already formatted. No change needed.
+		return `[${id}](${pastedText})`;
 	}
 
-	// Didn't match any path pattern. Ignore.
+	const idPrefix = type === 'commit' ? '@' : '#';
+	const idFormat = type === 'commit' ? id.slice(0, 7) : id;
+	const suffix = url.hash && isCommentHash(url.hash) ? ' (comment)' : '';
+	return `[${owner}/${repo}${idPrefix}${idFormat}${suffix}](${pastedText})`;
+}
+
+/**
+ * Tries to parse properties if this is a valid URL.
+ *
+ * Test cases:
+ * Case 1: Project Name
+ * - https://github.com/owner/repo -> "owner/repo"
+ * - https://github.com/owner/repo?tab=readme-ov-file#some-section-readme -> "owner/repo"
+ *
+ * Case 2: Issues, Pull Requests, Discussions
+ * - https://github.com/owner/repo/issues/{issue-number} -> "owner/repo#{issue-number}"
+ * - https://github.com/owner/repo/pull/{pr-id} -> "owner/repo#{pr-id}"
+ * - https://github.com/owner/repo/discussions/{discussion-id} -> "owner/repo#{discussion-id}"
+ *
+ * Case 3: Commits
+ * - https://github.com/owner/repo/commit/{commit-sha} -> "owner/repo@{commit-sha, first 7 characters only}"
+ *
+ * Case 4: Releases
+ * - https://github.com/owner/repo/releases/tag/{tag-id} -> "{tag-id} (release)"
+ *
+ * Case 5: Compare changes between Tags or Commits
+ * - https://github.com/owner/repo/compare/{old-tag/commit-id}...{new-tag/commit-id} -> "{old-tag/commit-id}...{new-tag/commit-id}"
+ *
+ * Exclusions:
+ * - We don't need to show hash values, so we don't parse for them.
+ *
+ * Notes:
+ * - Cases 2-5 have the same parsing logic, but need to be formatted in different ways. Maybe we should move this comment to the formatGHLink function instead of here.
+ */
+function parseDetails(pathname: URL['pathname']) {
+	// Check Case 1
+	let regex = /^\/([^/]+)\/([^/]+)\/?$/;
+	let match = regex.exec(pathname);
+	if (match) {
+		const [, owner, repo] = match;
+		return { owner, repo, type: 'repo', id: '' };
+	}
+
+	// Check Case 2-5
+	regex = /^\/([^/]+)\/([^/]+)\/(issues|pull|discussions|commit|releases\/tag|compare)\/([^/]+)\/?$/;
+	match = regex.exec(pathname);
+	if (match) {
+		const [, owner, repo, type, id] = match;
+		return { owner, repo, type: type === 'releases/tag' ? 'release' : type, id };
+	}
+
+	// Not a valid URL we care about. Ignore.
 	return null;
+}
+
+/**
+ * Checks if the hash is a comment hash.
+ *
+ * Test cases:
+ * - #issue-{number}
+ * - #issuecomment-{number}
+ * - #pullrequestreview-{number}
+ * - #review-{number}
+ * - #discussion-{number}
+ * - #discussion_r{number} (no hyphen)
+ * - #discussioncomment-{number}
+ *
+ * Other factors:
+ * - Optional hyphen in some cases.
+ * - Optional trailing slash in some cases.
+ */
+function isCommentHash(hash: URL['hash']): boolean {
+	return /^#(?:issue(?:comment)?|discussion(?:comment|_r)?|(?:pullrequest)?review)-?\d+\/?$/.test(hash || '');
 }
